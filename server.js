@@ -4,13 +4,39 @@ const { buildSchema } = require("graphql")
 
 // スキーマ言語
 const schema = buildSchema(`
+    type RandomDie {
+        numSides: Int!
+        rollOnce: Int!
+        roll(numRolls: Int!): [Int]
+    }
+
     type Query {
         quoteOfTheDay: String
         random: Float!
         rollThreeDice: [Int]
         rollDice(numDice: Int!, numSides: Int): [Int]
+        getDie(numSides: Int): RandomDie
     }`
 )
+
+//リゾルバ関数内の処理はクラス化できる
+class RandomDie {
+    constructor(numSides) {
+      this.numSides = numSides;
+    }
+  
+    rollOnce() {
+      return 1 + Math.floor(Math.random() * this.numSides);
+    }
+  
+    roll({numRolls}) {
+      let output = [];
+      for (var i = 0; i < numRolls; i++) {
+        output.push(this.rollOnce());
+      }
+      return output;
+    }
+  }
 
 // リゾルバ
 const root = {
@@ -29,7 +55,10 @@ const root = {
           output.push(1 + Math.floor(Math.random() * (numSides || 6)));
         }
         return output;
-      }
+    },
+    getDie: ({numSides}) => {
+        return new RandomDie(numSides || 6);
+    }
 }
 
 // expressサーバ
