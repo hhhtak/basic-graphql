@@ -16,8 +16,36 @@ const schema = buildSchema(`
         rollThreeDice: [Int]
         rollDice(numDice: Int!, numSides: Int): [Int]
         getDie(numSides: Int): RandomDie
-    }`
-)
+    }
+
+    input MessageInput {
+      content: String
+      author: String
+    }
+    
+    type Message {
+        id:ID!
+        content: String
+        author: String
+    }
+    
+    type Query2 {
+        getMessage(id: ID!): Message
+    }
+    
+    type Mutation {
+        createMessage(input: MessageInput): Message
+        updateMessage(id: ID!, input: MessageInput): Message
+    }
+`)
+
+class Message {
+  constructor(id, {content, author}) {
+    this.id = id;
+    this.content = content;
+    this.author = author
+  }
+}
 
 //リゾルバ関数内の処理はクラス化できる
 class RandomDie {
@@ -38,8 +66,32 @@ class RandomDie {
     }
   }
 
+// データの入れ物
+let fakeDatabase = {}
+
 // リゾルバ
 const root = {
+    getMessage: ({id}) => {
+      if (!fakeDatabase[id]) {
+        throw new Error('no message exists with id ' + id);
+      }
+      return new Message(id, fakeDatabase[id])
+    },
+    createMessage: ({input}) => {
+      // ランダムなIdを生成
+      var id = require('crypto').randomBytes(10).toString('hex');
+  
+      fakeDatabase[id] = input;
+      return new Message(id, input);
+    },
+    updateMesssage: ({id, input}) => {
+      if(!fakeDatabase[id]) {
+        throw new Error('no message exists with id ' + id);
+      }
+      // 古いデータの書き換え
+      fakeDatabase[id] = input;
+      return new Message(id, input)
+    },
     quoteOfTheDay: () => {
         return Math.random() < 0.5 ? "take it easy" : "Salvation lies within"
     },
